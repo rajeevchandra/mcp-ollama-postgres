@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    networks:
+      - app-network
+
+  mcp-server:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/mydb
+    ports:
+      - "3333:3333"
+    volumes:
+      - .:/app
+    networks:
+      - app-network
+    command: ["./wait-for-postgres.sh", "uvicorn", "server:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "3333"]
+
+  streamlit:
+    build: ./frontend
+    depends_on:
+      - mcp-server
+    ports:
+      - "8501:8501"
+    environment:
+      MCP_API_URL: http://mcp-server:3333/mcp
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,6 @@
+fastapi
+sqlalchemy
+pydantic-settings
+psycopg2-binary
+requests
+streamlit
